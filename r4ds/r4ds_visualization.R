@@ -43,4 +43,3 @@ p + geom_smooth(aes(displ, hwy, linetype = drv))
 ggplot(mpg) + geom_point(aes(displ, hwy, color = drv)) + geom_smooth(aes(displ, hwy, color = drv))
 ggplot(mpg, aes(displ, hwy, color = drv)) + geom_point() + geom_smooth() # exactly same code as above
 
-                         
