@@ -102,7 +102,7 @@ BA = rbind(A,B) # x1, x2 이름에 맞춰 붙는다. 그것들끼리 type도 맞
 ## 그리고 길이가 달라도 저장이 된다. Because of chaining
 
 # 빈 list
-jini <- vector(mode = 'list', length = 10); jini능
+jini <- vector(mode = 'list', length = 10); jini
 # j$s  가장 가독성 좋은 기능
 # j[["s"]] 위와 같은 기능
 # j["s"] 이렇게 쓰는 것은 자체보다 j[c("s","v")] 처럼 서브 리스트 만들 때 좋다
@@ -114,6 +114,7 @@ j$salary[,2]
 
 j$history # 설정 안 해줬으니 NULL
 j$history <- 1:10; j$history
+
 # j$salary <- NULL 이걸 하면 salary 부분이 없어질 것이다. 이 때 체이닝상 salary는 2번이었는데 이제 union이 2가 된다
 
 ############ data.frame 은 list 이면서 matrix의 인덱싱 기능이 가능하다
