@@ -8,8 +8,6 @@ x%%2  #나머지
 
 x <= 1
 
-
-
 # 
 set.seed(1)
 x <- runif(100)
@@ -59,6 +57,7 @@ class(y) == "matrix"
 dim(y); ncol(y); nrow(y)
 class(y[1,]) # 자동으로 numeric으로 변경
 class(y[1,,drop=FALSE]) # 자동으로 바꾸지 마
+diag(rep(1, 10)) # 1을 원소로 가지는 10X10짜리 대각행
 
 # 반복적으로 늘리는 테크닉
 a = NULL # a를 할당하기 위함
@@ -94,6 +93,14 @@ A = data.frame(x1 = rep('b',10), x2 = rep(0, 10))
 B = data.frame(x2 = rep(0,10), x1 = rep('d', 10))
 BA = rbind(A,B) # x1, x2 이름에 맞춰 붙는다. 그것들끼리 type도 맞아야 한다
 
+paste0("r", 1:10) # 이걸로 colnames에 넣어주면 편할 것
+paste("r", 1:10, sep = "        ")
+paste("r", 1:10, sep = "_")
+
+# data.frame에서 list로 바꿔주고 싶을 때, unclass 사용한다
+
+
+
 
 # list
 ## 리스트는 chain으로 이해하면 좋다 obj1 - obj2 - obj3 - obj4 ...
@@ -109,7 +116,7 @@ jini <- vector(mode = 'list', length = 10); jini
 j <- list(names = c('joe', 'nick'), salary = matrix(55000:55003, 2, 2), union = TRUE)
 j[[1]]
 j[[1]][2] # find nick
-j$salary[2] # matrix에 그리 적합한 코드가 아님... 애매하자나
+j$salary[2] # matrix에 그리 적합한 코드가 아님... 애매하자나 (일단 이렇게 되는 이유는 matrix가 vector에 기능을 추가한 수준이기 때무)
 j$salary[,2]
 
 j$history # 설정 안 해줬으니 NULL
@@ -140,4 +147,6 @@ a =  c("jack", "nick", "richard","jack","richard")
 table(a)
 af = factor(a, levels = cand)
 table(af)
+
+
 

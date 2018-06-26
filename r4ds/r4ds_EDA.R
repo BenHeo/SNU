@@ -112,3 +112,38 @@ ggplot(data = smaller, mapping = aes(x = carat, y = price)) +
 # cut_number divide x into number of bins of number'
 
 
+# Patterns & Model
+ggplot(data = faithful) + 
+  geom_point(mapping = aes(x = eruptions, y = waiting))
+
+# If two variables covary, you can use the values of one variable to make better predictions about the values of the second. 
+# If the covariation is due to a causal relationship (a special case), 
+# then you can use the value of one variable to control the value of the second.
+
+
+# c-p
+ggplot(data = diamonds) + 
+  geom_point(mapping = aes(x = carat, y = price))
+
+library(modelr)
+
+mod <- lm(log(price) ~ log(carat), data = diamonds)
+
+diamonds2 <- diamonds %>% 
+  add_residuals(mod) %>%  # add all residuals in linear regression model
+  mutate(resid = exp(resid))
+
+ggplot(data = diamonds2) + 
+  geom_point(mapping = aes(x = carat, y = resid)) # resids are smaller than price of c-p
+
+
+ggplot(diamonds) +
+  geom_boxplot(aes(x=cut, y=price))
+
+ggplot(diamonds2) + 
+  geom_boxplot(aes(x=cut, y=resid)) # problem of knowing relationship between cut and price was solved by resid,
+#                                                       which is residual of log(price)~log(carat)
+
+
+
+
