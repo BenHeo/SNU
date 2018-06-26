@@ -1,5 +1,5 @@
 # Assignment Number... : 1
-# Student Name........ : #반드시 이름은 한글로 작성할 것
+# Student Name........ : 허
 # File Name........... : hw1_허현
 # Program Description..: 자료형 활용하는 과제
 
