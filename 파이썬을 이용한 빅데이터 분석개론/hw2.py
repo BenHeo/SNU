@@ -1,5 +1,5 @@
 # Assignment Number... : 2
-# Student Name........ : 허
+# Student Name........ : 허현
 # File Name........... : hw2_허현
 # Program Description..: 문자열 활용하는 과제
 
