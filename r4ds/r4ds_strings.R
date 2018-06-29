@@ -215,3 +215,5 @@ x <- "Line 1\nLine 2\nLine 3"
 str_extract_all(x, "^Line")[[1]]
 str_extract_all(x, regex("^Line", multiline = TRUE))[[1]] # multiline accepted
 
+apropos("replace") # searches all objects available from global environment. useful when can¡¯t remember name of function
+head(dir(pattern = "\\.Rmd$")) # lists all the files in a directory, only returns file names that match the pattern
