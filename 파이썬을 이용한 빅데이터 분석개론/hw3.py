@@ -13,7 +13,8 @@ print('스테이크의 원래 가격은 {} 원입니다. 하지만 VAT 가 {}%�
 # 2
 s = '@^TrEat EvEryonE yOu meet likE you want tO be treated.$%'
 s = s[:3]+s[3:].lower()
-print(s.alpha())
+s = s[2:-2]
+print(s)
 # 무슨 함수 써야할지 헷갈림...
 
 
