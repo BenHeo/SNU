@@ -110,3 +110,21 @@ for (i in 1:eval.n){
   yhat[i] <- mean(y[idx.mat[i,]])
 }
 lines(eval.point, yhat, type = 'l', col = 'red')
+
+
+
+
+a = matrix(1:25, 5, 5)
+image(a)
+a
+
+z <- 2*volcano
+dim(z)
+x <- 10*(1:nrow(z))
+y <- 10*(1:ncol(z))
+z[30,4]
+x[30]
+y[4]
+persp(x,y,z, theta = 135, # 산 모양
+      ltheta = 20, col = "green3")
+contour(x,y,z) # 등고선
