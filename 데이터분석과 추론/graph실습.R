@@ -37,4 +37,3 @@ legend("bottomright", legend = c("Sepal", "Petal"), pch=c(16,1), col=1:2)
 
 # 히스토그램##################
 hist(iris$Sepal.Length, breaks = 20, freq = FALSE) # 20개 구간으로 나누고 frequency 기반이 아니라 density 기반으로 표시해달라는 의미
-
