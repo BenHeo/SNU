@@ -1,3 +1,8 @@
+# Assignment Number... : 7
+# Student Name........ : 허현
+# File Name........... : hw7_허현
+# Program Description..: 게임 만드는 과제
+
 # 출석 키우기 게임
 def absent4checker(absent, late): # 결석과 지각3번으로 인한 결석처리를 합쳐서 4회가 넘는지 알려주는 역할을 한다.
     changed_late = late // 3 # 지각은 3번이 쌓여야만 absent 처리가 되므로 3으로 나눈 정수부분만 구한다
