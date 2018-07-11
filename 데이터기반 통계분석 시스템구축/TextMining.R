@@ -31,9 +31,6 @@ read[10:20]
 
 
 
-
-
-
 # bag of words 는 N-gram의 N이 1인 특수한 형태
 # N이 2이면 'the cat', 'cat chased', 'chased the', 'the mouse', 'the dog', 'dog chased' 같이 묶임
 

@@ -123,7 +123,7 @@ str_replace(fruits, "[aeiou]", "-")
 str_replace_all(fruits, "[aeiou]", "-")
 
 
-
+# 텍스트 마이닝을 할 때,
 # Text를 vector 공간으로 옮겨야 분석이 가능하니까 word embedding을 거쳐야 한다 (categorical인 단어가 numeric화 된다고 볼 수 있다)
 # similarity가 높으면 가까이 embedding 되는 것이 합당하다
 # 대표 기법: word2vec, fasttext
