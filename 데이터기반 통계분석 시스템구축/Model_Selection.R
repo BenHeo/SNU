@@ -132,3 +132,9 @@ for (i in 1:100)
 }
 filled.contour(mu.vec, sigma.vec, simu, nlevels = 30, col = heat.colors(30))
 filled.contour(mu.vec, sigma.vec, logsimu, nlevels = 30, col = heat.colors(30))
+
+
+# logistic
+z = seq(-10, 10, length.out = 1000)
+y = exp(z)/(1+exp(z))
+plot(z,y, type = 'l')
