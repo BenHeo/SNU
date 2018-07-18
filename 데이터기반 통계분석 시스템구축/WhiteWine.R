@@ -34,7 +34,6 @@ boxplot(citric_acid~quality, col = 3:9)
 boxplot(residual_sugar~quality, col = 3:9)
 boxplot(chlorides~quality, col = 3:9)
 boxplot(log(chlorides)~quality, col = 3:9)
-
 boxplot(free_sulfur_dioxide~quality, col = 3:9)
 boxplot(total_sulfur_dioxide~quality, col = 3:9)
 boxplot(density~quality, col = 3:9)
