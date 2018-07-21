@@ -5,8 +5,8 @@ library(tidyverse)
 
 # API정보
 ## authorization
-client_id = 'ZoVED2Kc25huNZGJFpev' # api 에서 받은 id
-client_secret = 'AaTA1eFgOd' # api 에서 받은 secret
+client_id = '****' # api 에서 받은 id
+client_secret = '****' # api 에서 받은 secret
 header = httr::add_headers(
   'X-Naver-Client-Id' = client_id,
   'X-Naver-Client-Secret' = client_secret)
@@ -77,7 +77,7 @@ for (i in 1:1000){
 tw <- table(words)
 tw <- tw[tw>=5]
 tw
-hist(tw, breaks = 40, xlim = c(0, 200))
+hist(tw, breaks = 100, xlim = c(0, 200))
 tw[tw>150]
 sort(tw, decreasing = TRUE)
 dfBP2 <- data.frame(tw)
@@ -121,14 +121,15 @@ co_occur_mat[1:4, 1:4]
 # co_occur_mat의 숫자의 강도를 power로 주고 sankey 그래프를 그리자
 # 우선 matrix 크기를 줄일 것이다
 ## diag의 수가 빈도를 의미하기 때문에 diag가 너무 작은 것은 제거한다
-inv = (diag(co_occur_mat) >= 30)
+inv = (diag(co_occur_mat) >= 40)
 co_occur_mat1 <- co_occur_mat[inv, inv]
 co_occur_mat1
 co_occur_mat1[1:5, 1:5]
 noIdx <- which(colnames(co_occur_mat1) %in% c("해", "후", "한", "의", "이", "장", "저", "적", '전', '제', '주', '중', '지',
                                      '은', '을', '위', '월', '원', '세', '수', '로', '만', '명', '본', '분', '라', '데', '도', '두',
                                      '들', '를', '기', '나', '날', '내', '대', '데', '개', '그', '때', '리', '화', '양', '들이',
-                                     '듯', '과', '드', '니', '바', '림', '얼', '거', '시', 'amp', 'cm', 'com', 'gt', 'https', 'k', 'lt', 'm', 
+                                     '듯', '과', '드', '니', '바', '림', '얼', '거', '시', "년", "것", "출처", "번", "속",
+                                     'amp', 'cm', 'com', 'gt', 'https', 'k', 'lt', 'm', 
                                      'q', 's', 'x', 'v', 'www', 'u', 'a', 'b', 'r',
                                      'ne', 'l', 'e', 'd'))
 co_occurrence <- co_occur_mat1[-noIdx, -noIdx]
@@ -137,7 +138,7 @@ which_are_related <- data.frame()
 for (i in 1:nrow(co_occurrence)){
   for (j in 1:ncol(co_occurrence)){
     if (i < j){
-      if (co_occurrence[i,j] > 15){
+      if (co_occurrence[i,j] > 30){
         row = i
         col = j
         row_word = rownames(co_occurrence)[i]
@@ -150,3 +151,20 @@ for (i in 1:nrow(co_occurrence)){
 }
 head(which_are_related)
 
+
+if(!require(networkD3)){install.packages("networkD3"); library(networkD3)}
+if(!require(igraph)){install.packages("igraph"); library(igraph)}
+g = graph.adjacency(co_occurrence, weighted = T, mode = 'undirected') # 인접행렬 형태에서 igraph 만들기 편하게 해주는 함수
+g = simplify(g) # loop나 다중간선 없게
+wc = cluster_walktrap(g) # communities(densely connected subgraphs) 찾기
+members = membership(wc) 
+network_list = igraph_to_networkD3(g, group = members) # igraph to d3 list
+sankeyNetwork(Links = network_list$links, Nodes = network_list$nodes,
+              Source = "source", Target = "target", 
+              Value = "value", NodeID = "name",
+              units = "TWh", fontSize = 18, nodeWidth = 30)
+
+forceNetwork(Links = network_list$links, Nodes = network_list$nodes, NodeID = "name",
+             Source = "source", Target = "target",
+             Value = "value", arrows = F,
+             Group = "group", opacity = 0.8, zoom = TRUE)
