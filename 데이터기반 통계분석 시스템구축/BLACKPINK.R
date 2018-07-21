@@ -75,7 +75,7 @@ for (i in 1:1000){
   }
 }
 tw <- table(words)
-tw <- tw[tw>=5]
+tw <- tw[tw>=20]
 tw
 hist(tw, breaks = 100, xlim = c(0, 200))
 tw[tw>150]
@@ -89,10 +89,10 @@ dfBP2 <- dfBP2 %>%
   filter(!(words %in% c("해", "후", "한", "의", "이", "장", "저", "적", '전', '제', '주', '중', '지',
                        '은', '을', '위', '월', '원', '세', '수', '로', '만', '명', '본', '분', '라', '데', '도', '두',
                        '들', '를', '기', '나', '날', '내', '대', '데', '개', '그', '때', '리', '화', '양', '들이',
-                       '듯', '과', '드', '니', '바', '림', '얼', '거', '시')))
+                       '듯', '과', '드', '니', '바', '림', '얼', '거', '시', '호', "년", "것", "출처", "번", "속")))
 dfBP2 <- dfBP2 %>%
-  filter(!(words %in% c('amp', 'gt', 'k', 'lt', 'm',  'q', 's', 'x', 'v', 'u', 'a', 'b', 'r',
-                        'ne', 'l', 'e', 'd')))
+  filter(!(words %in% c('amp', 'gt', 'k', 'lt', 'm',  'q', 's', 'x', 'v', 'u', 'a', 'b', 'r', 'www', 'com',
+                        'ne', 'l', 'e', 'd', 'cm', 'https')))
 
 
 wordcloud2(dfBP2, size = 2, shape = 'star')
@@ -116,19 +116,18 @@ refined_dtm_mat <- dtm_mat[, colSums(dtm_mat) != 0] # 단어 중 문서 전체�
 refined_dtm_mat <- refined_dtm_mat[rowSums(dtm_mat) != 0,]
 co_occur_mat <- t(refined_dtm_mat) %*% refined_dtm_mat # 행렬 곱을 통해 특정 단어가 나온 문서에서 다른 특정 단어가 나온 빈도수 표현 (마코브 체인 활용)
 # 나오는 결과는 단어 X 단어 matrix
-co_occur_mat[1:4, 1:4]
+co_occur_mat[1:7, 1:7]
 
 # co_occur_mat의 숫자의 강도를 power로 주고 sankey 그래프를 그리자
 # 우선 matrix 크기를 줄일 것이다
 ## diag의 수가 빈도를 의미하기 때문에 diag가 너무 작은 것은 제거한다
 inv = (diag(co_occur_mat) >= 40)
 co_occur_mat1 <- co_occur_mat[inv, inv]
-co_occur_mat1
-co_occur_mat1[1:5, 1:5]
+co_occur_mat1[1:7, 1:7]
 noIdx <- which(colnames(co_occur_mat1) %in% c("해", "후", "한", "의", "이", "장", "저", "적", '전', '제', '주', '중', '지',
                                      '은', '을', '위', '월', '원', '세', '수', '로', '만', '명', '본', '분', '라', '데', '도', '두',
                                      '들', '를', '기', '나', '날', '내', '대', '데', '개', '그', '때', '리', '화', '양', '들이',
-                                     '듯', '과', '드', '니', '바', '림', '얼', '거', '시', "년", "것", "출처", "번", "속",
+                                     '듯', '과', '드', '니', '바', '림', '얼', '거', '시', "호", "년", "것", "출처", "번", "속",
                                      'amp', 'cm', 'com', 'gt', 'https', 'k', 'lt', 'm', 
                                      'q', 's', 'x', 'v', 'www', 'u', 'a', 'b', 'r',
                                      'ne', 'l', 'e', 'd'))
@@ -162,9 +161,36 @@ network_list = igraph_to_networkD3(g, group = members) # igraph to d3 list
 sankeyNetwork(Links = network_list$links, Nodes = network_list$nodes,
               Source = "source", Target = "target", 
               Value = "value", NodeID = "name",
-              units = "TWh", fontSize = 18, nodeWidth = 30)
+              units = "TWh", fontSize = 20, nodeWidth = 20)
+
+# 지수 with 댄스
+theIdx <- which(colnames(co_occur_mat1) %in% c("지수", "안무", "댄스", "매력", "노래", "음악"))
+Jisumatrix <- co_occur_mat1[theIdx, theIdx]
+Jisumatrix <- Jisumatrix[c(6, 5, 4, 1:3), c(6, 5, 4, 1:3)]
+g = graph.adjacency(Jisumatrix, weighted = T, mode = 'undirected') # 인접행렬 형태에서 igraph 만들기 편하게 해주는 함수
+wc = cluster_walktrap(g) # communities(densely connected subgraphs) 찾기
+members = membership(wc) 
+network_list = igraph_to_networkD3(g, group = as.character(members)) # igraph to d3 list
+network_list$links$group = network_list$nodes$group[network_list$links$source+1]
+sankeyNetwork(Links = network_list$links, Nodes = network_list$nodes,
+              Source = "source", Target = "target", 
+              Value = "value", NodeID = "name",
+              units = "TWh", fontSize = 20, nodeWidth = 40)
 
 forceNetwork(Links = network_list$links, Nodes = network_list$nodes, NodeID = "name",
              Source = "source", Target = "target",
-             Value = "value", arrows = F,
+             Value = "value", arrows = F, fontSize = 20,
              Group = "group", opacity = 0.8, zoom = TRUE)
+
+# 멤버
+memberIdx <- which(colnames(co_occur_mat1) %in% c("지수", "제니", "리사", "로제"))
+membermatrix <- co_occur_mat1[memberIdx, memberIdx]
+g = graph.adjacency(membermatrix, weighted = T, mode = 'undirected') # 인접행렬 형태에서 igraph 만들기 편하게 해주는 함수
+wc = cluster_walktrap(g) # communities(densely connected subgraphs) 찾기
+members = membership(wc) 
+network_list = igraph_to_networkD3(g, group = as.character(members)) # igraph to d3 list
+network_list$links$group = network_list$nodes$group[network_list$links$source+1]
+sankeyNetwork(Links = network_list$links, Nodes = network_list$nodes,
+              Source = "source", Target = "target", 
+              Value = "value", NodeID = "name",
+              units = "TWh", fontSize = 20, nodeWidth = 40)
