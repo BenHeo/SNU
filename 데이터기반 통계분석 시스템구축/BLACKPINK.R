@@ -149,6 +149,9 @@ for (i in 1:nrow(co_occurrence)){
   }
 }
 head(which_are_related)
+which_are_related %>%
+  arrange(desc(cnt)) %>%
+  head(50)
 
 
 if(!require(networkD3)){install.packages("networkD3"); library(networkD3)}
