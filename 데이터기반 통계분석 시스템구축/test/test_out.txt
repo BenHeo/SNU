@@ -1,0 +1,60 @@
+
+R version 3.5.0 (2018-04-23) -- "Joy in Playing"
+Copyright (C) 2018 The R Foundation for Statistical Computing
+Platform: x86_64-w64-mingw32/x64 (64-bit)
+
+R은 자유 소프트웨어이며, 어떠한 형태의 보증없이 배포됩니다.
+또한, 일정한 조건하에서 이것을 재배포 할 수 있습니다.
+배포와 관련된 상세한 내용은 'license()' 또는 'licence()'을 통하여 확인할 수 있습니다.
+
+R은 많은 기여자들이 참여하는 공동프로젝트입니다.
+'contributors()'라고 입력하시면 이에 대한 더 많은 정보를 확인하실 수 있습니다.
+그리고, R 또는 R 패키지들을 출판물에 인용하는 방법에 대해서는 'citation()'을 통해 확인하시길 부탁드립니다.
+
+'demo()'를 입력하신다면 몇가지 데모를 보실 수 있으며, 'help()'를 입력하시면 온라인 도움말을 이용하실 수 있습니다.
+또한, 'help.start()'의 입력을 통하여 HTML 브라우저에 의한 도움말을 사용하실수 있습니다
+R의 종료를 원하시면 'q()'을 입력해주세요.
+
+> idx = 1
+> a = 0
+> for (i in 1:30)
++ {
++   Sys.sleep(1)
++   cat("iterations: ", i, "th\n")
++   a = a + 1
++ }
+iterations:  1 th
+iterations:  2 th
+iterations:  3 th
+iterations:  4 th
+iterations:  5 th
+iterations:  6 th
+iterations:  7 th
+iterations:  8 th
+iterations:  9 th
+iterations:  10 th
+iterations:  11 th
+iterations:  12 th
+iterations:  13 th
+iterations:  14 th
+iterations:  15 th
+iterations:  16 th
+iterations:  17 th
+iterations:  18 th
+iterations:  19 th
+iterations:  20 th
+iterations:  21 th
+iterations:  22 th
+iterations:  23 th
+iterations:  24 th
+iterations:  25 th
+iterations:  26 th
+iterations:  27 th
+iterations:  28 th
+iterations:  29 th
+iterations:  30 th
+> a = a*idx
+> print(idx)
+[1] 1
+> save.image(paste0("test_",idx,".rdata"))
+> 
