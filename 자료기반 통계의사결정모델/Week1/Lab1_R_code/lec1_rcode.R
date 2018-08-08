@@ -391,13 +391,14 @@ apply ( USArrests , 2, mean )
 #lapply : returns a list
 #sapply : tries to simplify the result to a vector or a matrix if possible.
 
-#library(ISwR)
+library(ISwR)
 lapply(thuesen, mean, na.rm=T)
 sapply ( thuesen , mean , na.rm=T)
 
 #tapply : factor에 따라 첫번째 인자의 function값을 출력 
 #median of energy expenditure for each level (lean, obese)
 data ( energy )
+is(energy$stature)
 tapply ( energy $ expend , energy $ stature , median ) 
 
 
@@ -432,3 +433,10 @@ hist.with.normal(USArrests$Murder)
 
 
 # R function exercises (p. 58)
+
+
+
+
+
+library(rmarkdown)
+library(knitr)

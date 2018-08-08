@@ -1,0 +1,59 @@
+---
+title: "허현_HW1"
+author: "Hyun"
+date: "2018년 8월 7일"
+output: html_document
+mainfont: NanumGothic
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Question 3
+
+### Ex1
+
+Semester
+--------------------------------
+* **4-1**
+
+  * 통계학원론
+  * 수리통계학
+
+* **In SNU**
+
+  * 데이터 분석과 추론
+  * 데이터 기반 통계 분석 시스템 구축
+
+
+### Ex2
+#### url : https://s.hswstatic.com/gif/whiskers-sam.jpg
+
+Image
+-------------------------------
+![Cute cat :)](https://s.hswstatic.com/gif/whiskers-sam.jpg)
+
+### Ex3
+
+render("허현_HW1.Rmd")
+
+
+
+# Question 4
+
+### Ex1
+```{r linear_model, include=TRUE}
+mtmv <- read.csv("mtmv_data_10_12.csv")
+mtmv_lm <- lm(vote_share~mshare, data = mtmv)
+summary(mtmv_lm) # just for checking
+```
+
+
+### Ex2
+```{r plot, include=TRUE}
+plot(mtmv$vote_share~mtmv$mshare, xlab = "mshare", ylab = "vote share", main = "More Tweets, More Votes")
+abline(mtmv_lm, col="red")
+```
+
+# It looks like there is a relation between # of tweets and # of votes. 
