@@ -1,0 +1,42 @@
+---
+title: "한글 R마크다운 연습"
+author: "Boyoung"
+date: "2018년 8월 6일"
+output:
+#  pdf_document:
+#    latex_engine: xelatex
+#  html_document: default
+  word_document: default
+mainfont: NanumGothic
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+자료기반 통계의사결정모형 실습!!!
+
+##reference
+http://blog.naver.com/PostView.nhn?blogId=hsj2864&logNo=221098810477&categoryNo=36&parentCategoryNo=0&viewDate=&currentPage=1&postListTopCurrentPage=1&from=postView
+
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
