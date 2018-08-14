@@ -13,6 +13,7 @@
 library(Hmisc)
 library(mdsr)
 library(babynames)
+library(tidyverse)
 BabynamesDist <- make_babynames_dist()
 head(BabynamesDist, 2)
 
@@ -29,25 +30,25 @@ com_fem <- BabynamesDist %>%
   head(25)
 
 # est_num_alive==0 인것 먼저 제외하고 다시 하기.
-# anti_names <- BabynamesDist %>%
-#   filter(sex == "F") %>%
-#   group_by(name) %>%
-#   summarise(est_num_alive=sum(est_alive_today)) %>%
-#   filter(est_num_alive==0)%>%
-#   select(name)
-# 
-# 
-# com_fem <- BabynamesDist %>%
-#   anti_join(anti_names, by="name") %>%
-#   filter(sex == "F") %>%
-#   group_by(name) %>%
-#   summarise(
-#     N = n(), est_num_alive = sum(est_alive_today),
-#     q1_age = wtd.quantile(age_today, est_alive_today, probs = 0.25),
-#     median_age = wtd.quantile(age_today, est_alive_today, probs = 0.5),
-#     q3_age = wtd.quantile(age_today, est_alive_today, probs = 0.75)) %>%
-#   arrange(desc(est_num_alive)) %>%
-#   head(25)
+anti_names <- BabynamesDist %>%
+  filter(sex == "F") %>%
+  group_by(name) %>%
+  summarise(est_num_alive=sum(est_alive_today)) %>%
+  filter(est_num_alive==0)%>%
+  select(name)
+
+
+com_fem <- BabynamesDist %>%
+  anti_join(anti_names, by="name") %>%
+  filter(sex == "F") %>%
+  group_by(name) %>%
+  summarise(
+    N = n(), est_num_alive = sum(est_alive_today),
+    q1_age = wtd.quantile(age_today, est_alive_today, probs = 0.25),
+    median_age = wtd.quantile(age_today, est_alive_today, probs = 0.5),
+    q3_age = wtd.quantile(age_today, est_alive_today, probs = 0.75)) %>%
+  arrange(desc(est_num_alive)) %>%
+  head(25)
 
 
 # binding the data, defining the x and y aesthetics, title, labels
@@ -109,3 +110,54 @@ babynames %>%
   )%>%
   mutate(pp = abs(0.5-boys/total)) %>% arrange(pp) %>%
   head(10)
+
+
+
+
+
+
+
+
+
+
+################
+BabynamesDist <- make_babynames_dist()
+head(BabynamesDist, 2)
+
+anti_names <- BabynamesDist %>%
+  filter(sex == "M") %>%
+  group_by(name) %>%
+  summarise(est_num_alive=sum(est_alive_today)) %>%
+  filter(est_num_alive==0)%>%
+  select(name)
+
+com_male <- BabynamesDist %>%
+  anti_join(anti_names, by="name") %>%
+  filter(sex == 'M') %>% # only use sex data because all data is about people born after 1900
+  group_by(name) %>%
+  summarise(
+    N = n(),
+    est_num_alive = sum(est_alive_today),
+    q1_age = wtd.quantile(age_today, est_alive_today, probs = 0.25),
+    median_age = wtd.quantile(age_today, est_alive_today, probs = 0.5),
+    q3_age = wtd.quantile(age_today, est_alive_today, probs = 0.75)
+  ) %>%
+  filter(est_num_alive > 100000) %>%
+  arrange(median_age) %>%
+  head(25)
+
+head(com_male)
+
+m_plot <- ggplot(
+  com_male, aes(x=reorder(name, -median_age), y = median_age)
+  ) + xlab(NULL) + ylab("Age") + scale_y_discrete(limits = seq(5,30,5)) +
+  ggtitle("Youngest Male Names", subtitle = "By estimated median age for Americans alive as of Jan. 1, 2014")
+
+m_plot <- m_plot + geom_linerange(aes(ymin=q1_age, ymax=q3_age), color = '#76bde0', size = 5, alpha = 0.7) +
+  geom_text(x = 8, y = 8.5, label = "25th") +
+  geom_text(x = 8, y = 23.7, label = "75th percentile")
+
+m_plot + geom_point(fill = "#ed3324", color = "white", size = 4, shape = 21) + 
+  geom_point(aes(x=23, y=22), fill = "#ed3324", color = "white", size = 4, shape = 21) +
+  geom_text(aes(x=23, y=23), label = "median") +
+  geom_hline(yintercept = seq(5, 30, 5), linetype = 2) + coord_flip()
