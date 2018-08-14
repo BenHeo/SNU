@@ -22,7 +22,7 @@ glm.probs[1:10]
 library(tidyverse)
 library(MASS)
 # lab 1
-mpg <- read.csv("data/data/data/mpg.csv")
+mpg <- read.csv("data/Auto.csv")
 
 head(mpg)
 colSums(is.na(mpg)) # no NAs
@@ -31,13 +31,51 @@ mpg <- mpg %>%
   mutate(mpg01 = ifelse(mpg > med_mpg, 1, 0))
 train = (mpg$year %% 2 == 0)
 test = (mpg$year %% 2 != 0)
-train = mpg[train,]
-test = mpg[test,]
-mpg$cylinders = as.numeric(mpg$cylinders)
-train$cylinders = as.numeric(train$cylinders)
+trainXy = mpg[train,]
+testXy = mpg[test,]
+# mpg$cylinders = as.numeric(mpg$cylinders)
+# train$cylinders = as.factor(train$cylinders)
+# train$cylinders = as.factor(train$horsepower)
+# train$mpg01 = as.factor(train$mpg01)
 lda.fit <- lda(mpg01~cylinders+weight+displacement+horsepower, data = mpg, subset = train) # ???
-lda.class <- predict(lda.fit, test)$class
-table(lda.class, test$mpg01)
+lda.class <- predict(lda.fit, mpg[test,])$class
+table(lda.class, mpg[test,]$mpg01)
+
+qda.fit <-  qda(mpg01~weight+displacement+horsepower, data = mpg) # ???
+qda.class <- predict(qda.fit, mpg[test,])$class
+table(qda.class, mpg[test,]$mpg01)
+
+logistic.fit <- glm(mpg01~cylinders+weight+displacement+horsepower, data = mpg, family = binomial, subset = train)
+logistic.pred <- predict(logistic.fit, mpg[test,], type="response")
+pred <- ifelse(logistic.pred>0.5, 1, 0)
+table(mpg$mpg01, pred)
+
+trainX = trainXy %>%
+  dplyr::select(weight,displacement,horsepower)
+trainy = trainXy %>%
+  dplyr::select(mpg01)
+trainy = as.factor(trainy$mpg01)
+testX = testXy %>%
+  dplyr::select(weight,displacement,horsepower)
+testy = testXy %>%
+  dplyr::select(mpg01)
+testy = as.factor(testy$mpg01)
+
+library(class)
+trainX$horsepower <- as.numeric(trainX$horsepower)
+knn.pred = knn(trainX, testX, trainy, k = 3) # doesn't work... why?
 
 
-qda.fit <-  qda(mpg01~cylinders+weight+displacement+horsepower, data = mpg, subset = train)
+# Lab 2
+Default <- read.table("data/data/data/default.txt")
+head(Default)
+def_glm.fit <- glm(default~income+balance, data = Default, family = binomial)
+summary(def_glm.fit)
+
+boot.fn <- function(dat, idx){
+  my_glm <- glm(default~income+balance, data = dat, family = binomial, subset = idx)
+  coeff <- coef(my_glm)
+  return(coeff)
+}
+library(boot)
+boot(Default, boot.fn, 50)
