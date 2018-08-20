@@ -1,0 +1,42 @@
+---
+title: "Rmarkdown_practice"
+author: "Hyun"
+date: "2018년 8월 20일"
+output: 
+  html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ISLR)
+library(tidyverse)
+```
+
+# Data import
+
+```{r}
+Auto <- ISLR::Auto
+```
+
+```{r, echo = FALSE}
+head(Auto)
+```
+
+# Fit the model
+
+
+```{r linear model}
+lm.fit <- lm(mpg~horsepower, data = Auto)
+```
+
+# Table
+```{r table, echo = FALSE}
+coef <- summary(lm.fit)$coefficients
+knitr::kable(coef, caption = "Summary")
+```
+
+```{r plot, echo = FALSE}
+plot(Auto$mpg~Auto$horsepower, pch = 19, cex = 0.5)
+abline(lm.fit, col = "red")
+```
+
