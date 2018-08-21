@@ -3,7 +3,7 @@ title: "Rmarkdown_practice"
 author: "Hyun"
 date: "2018년 8월 20일"
 output: 
-  html_document
+  pdf_document
 ---
 
 ```{r setup, include=FALSE}
@@ -30,6 +30,7 @@ lm.fit <- lm(mpg~horsepower, data = Auto)
 ```
 
 # Table
+
 ```{r table, echo = FALSE}
 coef <- summary(lm.fit)$coefficients
 knitr::kable(coef, caption = "Summary")
