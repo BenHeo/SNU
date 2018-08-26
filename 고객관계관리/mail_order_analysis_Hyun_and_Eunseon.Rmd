@@ -206,7 +206,7 @@ train1 <- train %>%
   filter(purchase == 1)
 
 Btrain <- train1
-for (i in 1:9){
+for (i in 1:7){
   train1B <- train1
   rand.mat <- matrix(rnorm(163*4, 0, 2), 163, 4)
   random_train <- as.matrix(train1B[,-c(1,2,7)]) + rand.mat
@@ -226,11 +226,11 @@ glm.prob <- predict(glm.fit, test)
 glm.pred <- ifelse(glm.prob>=0.5, 1, 0)
 glm.conf_mat <- table(purchase = test$purchase, glm.pred); glm.conf_mat
 summary(glm.fit)
-glm.conf_mat[2,2]/(sum(glm.conf_mat[2,]))
+glm.conf_mat[2,2]/(sum(glm.conf_mat[,2]))
 (glm.conf_mat[1,1]+glm.conf_mat[2,2])/sum(glm.conf_mat)
 ```
 
-* 시행 착오를 통해 purchase가 1인 경우를 9번 추가 학습 시키기로 하였고, 그에 따른 총 학습 횟수는 위의 바그래프와 같이 나왔습니다.
+* 시행 착오를 통해 purchase가 1인 경우를 7번 추가 학습 시키기로 하였고, 그에 따른 총 학습 횟수는 위의 바그래프와 같이 나왔습니다.
 * stepwise 방법을 통해 변수를 선택한 결과 id를 제외한 모든 변수를 사용하는 것으로 나왔지만, 모든 변수를 사용하여 예측하는 경우 duration 변수가 유의하지 않아서 duration을 제외한 gender, monetary, recency, frequency를 변수로 채택했습니다.
-* 결과의 confusion matrix는 위와 같이 나왔으며, 전체 예측률은 0.8245, 구매하는 고객에 대한 예측률은 0.3641로 나왔습니다.
+* 결과의 confusion matrix는 위와 같이 나왔으며, 전체 예측률은 0.866, 구매하는 고객에 대한 예측률은 0.212로 나왔습니다.
 * 이 케이스의 경우 임의로 전체 예측률이 80% 이상이 되야 한다는 제약조건을 걸었지만, 실제 마케팅 상황에서는 마케팅 비용 대비 수익을 고려하여 이 방법론을 적용해야 할 것으로 생각됩니다.
