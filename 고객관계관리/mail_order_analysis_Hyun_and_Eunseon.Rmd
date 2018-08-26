@@ -1,0 +1,236 @@
+
+```{r setting, echo = TRUE, results='asis', warning=FALSE, message=FALSE}
+library(tidyverse)
+library(data.table)
+library(randomForest)
+set.seed(1)
+mail <- fread('mail_order.csv')
+# mail
+training_idx <- 1:2000
+training <- mail[training_idx,]
+testing <- mail[-training_idx,]
+```
+
+* 총 4000개의 데이터 중 처음 2000개 데이터를 훈련 데이터로 사용하고, 나머지 2000개를 테스트 데이터로 활용했으며 모든 문제에 대해 같게 적용했습니다.
+* 임의추출을 필요로 하는 내용이 있어 결과의 일관성을 위해 set.seed를 1로 주었습니다.
+* 이후에 사용된 코드는 보고서의 방향성을 고려할 때 굳이 적을 필요가 없다 판단되어 표시하지 않았습니다. 코드를 보여줄 필요성이 있는 경우 가장 마지막에 주석처럼 표시하도록 하겠습니다.
+
+
+# Question 1.
+Randomly select 500 customers in the validation sample. Calculate the number of customers who actually made purchases. (This is the baseline case. That is, it represents the hit rate without employing models.)
+
+```{r echo = FALSE}
+set.seed(1)
+refer_rand_idx <- sample.int(2000, 500, replace = FALSE)
+refer_df <- testing[refer_rand_idx,]
+refer_prop <- sum(as.integer(refer_df$purchase))/500
+refer_prop 
+```
+
+* 기준 점수는 0.064 (6.4%)입니다.
+
+
+# Question 2.
+Create 222 RFM codes for estimation and validation sample. Note that the median of recency, 0.5(recency) is 12, 0.5(frequency) is 2, and 0.5(monetary) = $209. Based on the RFM analysis of the estimation sample, select 500 customers (in the validation sample) with the highest purchase potentials. Calculate the number of customers who actually made purchases.
+
+```{r echo = FALSE}
+set.seed(1)
+nMail <- mail %>% 
+  mutate(R = ifelse(recency <= 12, 2, 1),
+         `F` = ifelse(frequency >=3, 2, 1),
+         M = ifelse(monetary >= 209, 2, 1))
+
+nMail[training_idx,] %>% 
+  group_by(R,`F`,M) %>%
+  summarise(n = n(),
+            proba = sum(purchase)/n) %>%
+  arrange(desc(proba)) # 221 => 222 => 212 => 211 => 122 => 121 => 112 => 111
+
+nMail[-training_idx,] %>%
+  group_by(R, `F`, M) %>%
+  summarise(n = n(),
+            proba = sum(purchase)/n) %>%
+  arrange(desc(proba))
+
+nMailTest <- nMail[-training_idx,] %>%
+  filter(R == 2,
+         `F` == 2,
+         M %in% c(1, 2))
+
+nMailPlus <- nMail[-training_idx,] %>%
+  filter(R == 2,
+         `F` == 1,
+         M == 2) %>%
+  sample_n(100)
+
+nMailTest <- nMailTest %>%
+  bind_rows(nMailPlus)
+
+sum(as.integer(nMailTest$purchase))
+sum(as.integer(nMailTest$purchase))/500 # 0.158
+```
+
+* 위의 테이블은 트레인셋을 RFM 기준으로 8 집단을 나눈 후 구매확률에 따라 정렬한 것이고, 아래 테이블은 테스트셋에서 각 RFM 집단마다 몇 명이 분포해 있는지 파악하고 총합이 500이 되게 하기 위해 표시한 결과입니다.
+* 테스트셋에서 3번째 집단인 RFM이 2,1,2인 집단을 100명만 추출해야 했기 때문에 랜덤으로 100명을 선택했습니다.
+* 결과는 선택한 500명 중 76명이 실제 구매를 했고, 비율은 0.152 (15.2%)이었습니다.
+
+
+# Question 3. 
+Create 555 RFM codes for estimation and validation sample. Use the following rules that divide the sample into five (approximately) equal segments. Based on the RFM analysis of the estimation sample, select 500 customers (in the validation sample) with the highest purchase potentials. Calculate the number of customers who actually made purchases.
+
+```{r echo=FALSE, message=FALSE}
+set.seed(1)
+fMail <- mail %>%
+  mutate(R = ifelse(recency > 16, 1, ifelse(recency > 12, 2, 
+                                            ifelse(recency > 8, 3, ifelse(recency > 4, 4, 5)))),
+         `F` = ifelse(frequency == 1, 1, ifelse(frequency == 2, 2, 
+                                               ifelse(frequency <= 5, 3, 
+                                                      ifelse(frequency <= 9, 4, 5)))),
+         M = ifelse(monetary <= 113, 1, ifelse(monetary <= 181, 2, 
+                                            ifelse(monetary <= 242, 3, 
+                                                   ifelse(monetary <= 299, 4, 5))))
+  )
+k <- fMail[training_idx,] %>%
+  group_by(R, `F`, M) %>%
+  summarise(n = n(),
+    proba = sum(purchase)/n) %>%
+  arrange(desc(proba)) # 454 => 415 => 442 => 452 => 552 => 532 => 434 => 234 => 343 => 545 => ...
+
+
+tt <- fMail[-training_idx,] %>%
+  group_by(R, `F`, M) %>%
+  summarise(test_n = n(),
+            test_purchase = sum(purchase),
+            test_proba = sum(purchase)/test_n) %>%
+  arrange(desc(test_proba))
+
+joined_RFM <- k %>% 
+  inner_join(tt)
+x = 0
+cnt = 0
+while(cnt < 500){
+  x = x+1
+  cnt = cnt + joined_RFM[x,"test_n"]
+}
+# x
+# joined_RFM[x+1,]
+
+f_joined_RFM <- joined_RFM[1:37,]
+# sum(f_joined_RFM$test_n)
+# joined_RFM[38,]
+
+f_RFM_plus <- fMail[-training_idx,] %>%
+  filter(R == 3, `F` == 4, M == 4) %>%
+  sample_n(8) %>%
+  group_by(R, `F`, M) %>%
+  summarise(test_n = n(),
+            test_purchase = sum(purchase),
+            test_proba = sum(purchase)/test_n)
+
+ff <- f_joined_RFM %>%
+  select(-c(n, proba)) %>%
+  bind_rows(f_RFM_plus)
+
+ff[,4:5] %>%
+  summarise(n = sum(test_n),
+          purchase = sum(test_purchase),
+          proba = purchase/n) # number of customers = 500, number of purchase = 62 => 12.4
+
+```
+
+* 2번 문제와 비슷하게 수행한 결과 선택한 500명 중 62명이 구매를 해 확률은 0.124 (12.4%)였습니다.
+* 8개 집단으로 나눈 것에 비해 125개 집단으로 나누면서 예측률이 더 떨어진 것을 통해 집단을 더 많이 나누는 것이 꼭 더 좋은 결과를 불러오지 않는다는 것을 알 수 있었습니다.
+
+# Question 4. 
+Apply the following linear regression model to the estimation sample. 
+	Purchase = 0 + 1(recency) + 2(frequency) + 3(monetary)
+Based on the coefficient estimates from the regression, estimate the purchase probability of each of 2,000 customers in the validation sample. Select the top 500 customers and calculate the number of customers who actually made purchases.
+
+```{r echo = FALSE}
+set.seed(1)
+reg_train <- mail[training_idx,]
+reg_test <- mail[-training_idx,]
+lm.fit <- lm(purchase~monetary+recency+frequency, reg_train)
+
+pred_lm <- predict(lm.fit, reg_test)
+pp <- tibble(pred = pred_lm, purchase = reg_test$purchase)
+pp %>%
+  arrange(desc(pred)) %>%
+  head(500) %>%
+  summarise(
+    purchase_num = sum(purchase),
+    purchase_prob = sum(purchase)/500) # 0.16
+```
+
+* 2, 3번 문제와 달리 인위적으로 그룹화를 해주지 않고 recency, frequency, monetary 변수 자체를 가지고 회귀분석을 수행하였고, 학습한 계수를 테스트셋에 적용하여 가장 값이 높게 예측되는 것부터 500개를 순서대로 선별하였습니다.
+* 선택한 500개에서 실제 구매는 80명이 했고, 이는 0.16 (16%)에 해당하는 수치입니다.
+* 로지스틱 회귀분석을 수행할 경우 하려는 목적에 더 맞을 것으로 예상되어 로짓 확률로 정렬 후 가장 확률이 높은 500개 수행한 결과의 확률은 16.6%였습니다.
+
+# Question 5. 
+Propose a model of any form and do the same as above. (Your model will be evaluated in terms of the magnitude of improvement over the above models in validation sample.)
+
+```{r graph, echo = FALSE}
+set.seed(1)
+mail$purchase <- as.factor(mail$purchase)
+mail$gender <- as.factor(mail$gender)
+train <- mail[training_idx,]
+test <- mail[-training_idx,]
+ggplot(train, aes(x=purchase)) + geom_bar() + ggtitle("Number of purchase in train set")
+ggplot(test, aes(x=purchase)) + geom_bar() + ggtitle("Number of purchase in test set")
+ggplot(mail, aes(x=recency, fill=purchase)) + geom_bar() + ggtitle("Number of purchase in total set according to recency")
+ggplot(mail, aes(x=frequency, fill=purchase)) + geom_bar() + ggtitle("Number of purchase in total set according to frequency")
+ggplot(mail, aes(x=monetary, fill=purchase)) + geom_bar() + ggtitle("Number of purchase in total set according to monetary")
+ggplot(mail, aes(x=duration, fill=purchase)) + geom_bar() + ggtitle("Number of purchase in total set according to duration")
+ggplot(mail, aes(x=gender, fill=purchase)) + geom_bar() + ggtitle("Number of purchase in total set according to gender")
+
+
+glm.fit <- glm(purchase ~ gender+recency+frequency, data = train, 
+               family = "binomial")
+glm.prob <- predict(glm.fit, test)
+glm.pred <- ifelse(glm.prob>=0.5, 1, 0)
+glm.conf_mat <- table(purchase = test$purchase, glm.pred); glm.conf_mat
+summary(glm.fit)
+```
+
+* 분석에 앞서 시각화를 통해 분석의 방향을 잡고자 했습니다.
+* 시각화를 통해 전반적으로 구매하는 사람 수는 구간별로 비슷하지만, 구매하지 않는 사람 수가 구간별로 다른 것을 발견했고, 전체 인원 대비 구매한 사람의 비율이 선형성을 띤다고 생각 할 수 있었습니다. 이 아이디어를 활용해 선형적 예측 모델인 로지스틱 모형을 적용하면 설명력과 예측 모두 잡을 수 있을 거라고 생각하여 로지스틱 모형을 사용했습니다.
+* 로지스틱 회귀 과정에서 확률 값이 0.5 이상인 경우는 1로 예측하고 미만인 경우에는 0으로 에측하게 하였습니다.
+* stepwise 변수선택을 통해 gender와 recency, frequency를 독립변수로 사용했습니다.
+* 주어진 데이터는 purchase 변수가 1에 비해 0이 굉장히 많아 불균형한 것을 알 수 있었습니다. 이런 불균형은 최적 계수를 구하는 과정에서 purchase 값이 0인 데이터의 영향을 많이 받게 만들었습니다. 로지스틱 회귀분석 수행 결과 모두 0으로 예측하는 것을 발견하여 이 현상이 사실임을 알 수 있었습니다. 
+* 불균형이 예측을 어렵게 하는 주요 원인이라는 것을 발견하고 이 불균형을 해결하기로 했습니다. 여러 방법이 가능하겠지만 저희는 purchase 값이 1인 관측값을 여러번 다시 학습시키는 방법을 선택했습니다. 또한 이 방법을 사용하면 분산을 과소추정 하게 되므로 다시 학습시킬 때 평균이 0, 분산이 2인 에러를 의도적으로 주어 분산의 과소추정을 막고자 했습니다.
+* 의도적으로 특정 관측치를 추가 학습시키는 것은 실제 purchase가 1인 경우에 대한 적중률은 높일 수 있지만, purchase가 0인 경우에 대한 적중률을 희생하기 때문에 전체적 예측률을 낮출 수 있습니다. 그것을 막기 위해 전체 예측률이 80% 미만으로 떨어지지 않을만큼만 추가 학습시키기로 기준을 정했습니다.
+
+```{r echo = FALSE}
+set.seed(1)
+train1 <- train %>%
+  filter(purchase == 1)
+
+Btrain <- train1
+for (i in 1:9){
+  train1B <- train1
+  rand.mat <- matrix(rnorm(163*4, 0, 2), 163, 4)
+  random_train <- as.matrix(train1B[,-c(1,2,7)]) + rand.mat
+  train1B[, -c(1,2,7)] <- random_train
+  Btrain <- bind_rows(Btrain, train1B)
+}
+Ntrain <- bind_rows(train, Btrain)
+ggplot(Ntrain, aes(x=purchase)) + geom_bar()
+
+# glm.fit <- glm(purchase ~ gender+monetary+recency+frequency+duration, data = Ntrain, 
+#                family = "binomial")
+# step(glm.fit, direction = "both")
+
+glm.fit <- glm(purchase ~ gender+monetary+recency+frequency, data = Ntrain, 
+               family = "binomial")
+glm.prob <- predict(glm.fit, test)
+glm.pred <- ifelse(glm.prob>=0.5, 1, 0)
+glm.conf_mat <- table(purchase = test$purchase, glm.pred); glm.conf_mat
+summary(glm.fit)
+glm.conf_mat[2,2]/(sum(glm.conf_mat[2,]))
+(glm.conf_mat[1,1]+glm.conf_mat[2,2])/sum(glm.conf_mat)
+```
+
+* 시행 착오를 통해 purchase가 1인 경우를 9번 추가 학습 시키기로 하였고, 그에 따른 총 학습 횟수는 위의 바그래프와 같이 나왔습니다.
+* stepwise 방법을 통해 변수를 선택한 결과 id를 제외한 모든 변수를 사용하는 것으로 나왔지만, 모든 변수를 사용하여 예측하는 경우 duration 변수가 유의하지 않아서 duration을 제외한 gender, monetary, recency, frequency를 변수로 채택했습니다.
+* 결과의 confusion matrix는 위와 같이 나왔으며, 전체 예측률은 0.8245, 구매하는 고객에 대한 예측률은 0.3641로 나왔습니다.
+* 이 케이스의 경우 임의로 전체 예측률이 80% 이상이 되야 한다는 제약조건을 걸었지만, 실제 마케팅 상황에서는 마케팅 비용 대비 수익을 고려하여 이 방법론을 적용해야 할 것으로 생각됩니다.
