@@ -1,0 +1,74 @@
+---
+title: "허현_HW3"
+author: "Hyun"
+date: "2018년 8월 25일"
+output: html_document
+mainfont: NanumGothic
+---
+
+```{r library and data, include=FALSE}
+library(tidyverse)
+library(dplyr)
+library(broom)
+library(OpenMx)
+data(twinData)
+```
+
+```{r load data}
+twinData <- as_tibble(twinData)
+```
+
+# EX 8
+
+```{r}
+twinData %>%
+  group_by(cohort, zygosity) %>%
+  do(tidy(cor.test(~ht1+ht2, data = .))) %>% 
+  mutate(signif = ifelse(conf.low > 0.7, 1, 0)) %>% select(signif) %>%
+  inner_join(twinData) %>%
+  ggplot(aes(ht1, ht2)) + geom_point(aes(color = signif)) + 
+  facet_grid(cohort~zygosity)
+```
+
+# EX 9
+
+```{r}
+twinData %>%
+  group_by(cohort, zygosity) %>%
+  do(tidy(cor.test(~wt1+wt2, data = .))) %>% 
+  mutate(signif = (ifelse(conf.low > 0.7, 1, 0))) %>% 
+  select(signif) %>%
+  inner_join(twinData) %>%
+  mutate(signif = as.factor(signif)) %>%
+  ggplot(aes(wt1, wt2, color = signif)) + geom_point() + 
+  facet_grid(cohort~zygosity) +
+  scale_color_manual(values = c("black", "skyblue"))
+```
+
+# EX 10
+
+```{r}
+twinData %>%
+  gather(`ht1`, `ht2`, key = "twin", value = "height") %>%
+  ggplot(aes(twin, height)) + geom_boxplot() +
+  facet_grid(cohort~zygosity) + xlab("order")
+```
+
+
+# EX 11
+### "DZOS"를 제외한 나머지는 가설이 맞는 것으로 보인다.
+
+# EX 12
+### 쌍둥이는 쌍이 만들어지고 서로 관계가 있기 때문에 paired t test를 쓴다. 
+
+```{r}
+twinData %>% 
+  group_by(cohort, zygosity) %>%
+  do(tidy(t.test(.$ht1, .$ht2, paired = TRUE))) %>%
+  mutate(signif_diff = as.factor(ifelse(p.value < 0.05, 1, 0))) %>%
+  inner_join(twinData) %>%
+  gather(`ht1`, `ht2`, key = "twin", value = "height") %>%
+  ggplot(aes(twin, height, color = signif_diff)) + geom_boxplot() +
+  facet_grid(cohort~zygosity) + xlab("order") +
+  scale_color_manual(values = c("black", "purple"))
+```
