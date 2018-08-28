@@ -21,6 +21,10 @@ for (i in 1:10){
 km
 plot(km, type = 'l')
 points(km, col = "red", cex = 1.5)
+mu_km <- mean(km[2:10])
+std_km <- sd(km[2:10])
+abline(h=mu_km+2*std_km)
+abline(h=mu_km-2*std_km)
 
 ggplot(iris, aes(Petal.Length, Petal.Width, color = Species)) + geom_point(size = 2)
 irisCluster <- kmeans(iris[,c(3,4)], 3, nstart = 20)
@@ -71,6 +75,12 @@ y=1+1*x[,1]+2*x[,2]+3*x[,3]+4*x[,4]+5*x[,5]+rnorm(50)
 pr.out=prcomp(x,scale=T)
 head(pr.out,n=2)
 
+var_pr <- pr.out$sdev^2
+t_var_pr <- sum(var_pr)
+explan_prob <- var_pr/t_var_pr
+plot(explan_prob, type = 'l')
+screeplot(pr.out)
+
 pcscore=pr.out$x[,1:2] #2개의 principal component 사용
 load=pr.out$rotation[,1:2]
 plm=lm(unlist(y)~pcscore)
@@ -86,3 +96,13 @@ for(k in (2:6)){
 betaest
 
 library(pls)
+set.seed(1)
+train = 1:200
+test = -train
+y.test = Hitters[test, "Salary"]
+pcr.fit=pcr(Salary~., data=Hitters,subset=train,scale=TRUE, validation="CV")
+validationplot(pcr.fit,val.type="MSEP")
+pcr.pred=predict(pcr.fit,Hitters[test,],ncomp=3)
+mean((pcr.pred-y.test)^2)
+pcr.fit=pcr(y~x,scale=TRUE,ncomp=3)
+summary(pcr.fit)
