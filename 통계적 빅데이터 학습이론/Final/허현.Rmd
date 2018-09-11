@@ -1,0 +1,291 @@
+---
+title: "Final"
+author: "Hyun, Heo"
+date: "2018<eb>년 9<ec>월 9<ec>일"
+output:
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(cache = TRUE)
+knitr::opts_chunk$set(warning = FALSE)
+```
+
+# 1 
+## 1-1
+(y-XB)'(y-XB) + lambdaB'B를 최소로 하는 B(Beta)를 구하는 문제 or l2 optimization 문제
+
+## 1-2
+y-XB가 대칭행렬이기 때문에 B를 구성하는 두 값이 같다
+
+## 1-3
+l1 optimization 문제
+
+## 1-4
+l1이기 때문에 non-singular 문제를 해결해주는 것이 아니다. 따라서 두 베타 예측값이 다르고 많다
+
+
+# 2
+## 2-1
+(b) IQ와 GPA가 고정되어 X1, X2, X4가 고정되었고, X5는 constant*Gender 꼴이 되었기 때문에 계산이 가능하고 평균적으로 학점은 3.5보다 낮은 수준이다.
+
+## 2-2
+50-80+7.7+35+4.4-40 = -22.9
+
+## 2-3
+거짓. coefficient는 좋은 정보를 주지만 스케일링 등의 고질적 문제가 있기 때문에 계수만으로 모든 것을 합리화 할 수는 없
+
+# 3
+
+```{r setup library and data, include=FALSE}
+library(tidyverse)
+library(data.table)
+library(xlsx)
+library(gbm)
+library(caret)
+# library(e1071)
+set.seed(1)
+political <- read.xlsx("data3.xlsx", 1)
+fin4 <- read.xlsx("data4.xlsx", 2, startRow = 2)
+fin4 <- fin4 %>%
+  select(-NA.)
+poli_rel <- read.xlsx("data5.xlsx", 1)
+poli_party <- read.xlsx2("data5.xlsx", 2)
+legi_order <- poli_rel$NA.
+rownames(poli_rel) <- legi_order
+poli_rel <- poli_rel %>%
+  select(-1)
+```
+
+EDA 과정을 모두 써야할지 아닐지 고민하다가 특히 3번 문제의 경우 EDA 시간이 매우 길었기에 굳이 EDA 과정을 코드로 모두 쓰진 않기로 했습니다. 대신 문제를 *두가지 방식*으로 풀었는데 첫번째는 수업 중 배운 알고리즘을 활용해서 풀었고, 두번째 방식은 저만의 방식으로 풀었습니다. 이 때 두번째 방식에 EDA 과정에서 어떤 정보를 얻었고 어떻게 활용하겠다는 생각을 했는지 서술하겠습니다.
+
+```{r change}
+political$k3[political$k3==2] <- 0   # change 1,2 to 0,1
+```
+```{r reference}
+sum(political$ideo_self==5)/nrow(political) # at least this
+```
+
+우선 k3변수가 다른 변수와 달리 1,2로 처리되어 있어서 0,1로 바꿔주었습니다.
+그리고 ideo_self가 5인 경우가 굉장히 많아 전체를 무조건 5로 예측한 경우를 기준으로 삼기 위해 이 때 예측률을 미리 확인했습니다.
+
+```{r empty}
+colSums(is.na(political))
+colSums(political[9:18], na.rm = T)
+```
+
+결측값 정보를 확인했고, 확인 결과 모든 결측치는 정치 문항에 대해 패스한 경우에만 발생했다는 것을 확인할수 있었습니다. 일반적으로 패스한 경우 선택이 매우 어려웠거나 중립인 경우에 해당한다는 점을 추후 분석에 고려하였습니다.
+
+```{r tidy poli df}
+poliforest <- political %>%
+  select(k2:k14)
+poliforest[poliforest==0] <- -1 # change 0 to 1
+poliforest[is.na(poliforest)] <- 0 # change NA to 0
+political2 <- political
+political2[,9:18] <- poliforest
+pol2 <- political2 %>% 
+  select(sex, age1, area:ideo_self)
+pol2$ideo_self <- as.factor(pol2$ideo_self)
+pol2$area <- as.factor(pol2$area)
+```
+
+위에서 설명했듯 결측값에도 응답자의 정보가 담겨있으므로 이 정보를 살리고자 했습니다. 기존 0,1로 적던 방식을 -1,0,1로 바꾸어 패스한 경우 0으로 처리하였습니다.
+또한 두가지 형태의 나이 변수 중 더 많은 정보를 포함한 age1 변수를 선택하였습니다.
+추가적으로 factor형으로 꼭 설정해야 한다고 생각한 변수인 ideo_self와 지역에 대해서는 factor화 했습니다.
+
+## 3-1
+
+```{r first method}
+fold_point <- c(seq(0, 900, 100), 1054)
+ten_tables <- matrix(0, 11, 11)
+colnames(ten_tables) <- paste0("pred", 0:10)
+rownames(ten_tables) <- paste0("real", 0:10)
+ten_tables <- as.table(ten_tables)
+for (i in 1:10){
+  start_point <- fold_point[i]+1
+  end_point <- fold_point[i+1]
+  test_idx <- start_point:end_point
+  test_set <- pol2[test_idx,]
+  train_set <- pol2[-test_idx,]
+  boost.pol=gbm(ideo_self~.,data=train_set,
+                   distribution="multinomial",n.trees=500, interaction.depth = 1, cv.folds = 5)
+  best.iter = gbm.perf(boost.pol, method="cv")
+  fitControl = trainControl(method="cv", number=5, returnResamp = "all")
+  model2 = train(ideo_self~.,data=train_set, method="gbm",distribution="multinomial",
+                 trControl=fitControl, verbose=F,
+                 tuneGrid=data.frame(.n.trees=best.iter, .shrinkage=0.02, .interaction.depth=1, .n.minobsinnode=1))
+  mPred = predict(model2, test_set, na.action = na.pass)
+  itable <- table(real = test_set$ideo_self, pred = mPred)
+  ten_tables <- ten_tables + as.table(itable)
+}
+```
+
+10-fold cv를 수행하기 위해 총 1054개의 관측값을 100 단위로 자르고, 마지막 fold는 901부터 1054까지가 되게 했습니다. 
+statistical learning 알고리즘은 gbm을 이용한 부스팅 트리를 사용했습니다. 이 알고리즘을 사용한 이유는 클래스간 불균형이 매우 컸기 때문입니다. 만약 2가지 중 하나를 예측하는 문제라면 불균형 문제를 부족한 부분의 데이터를 늘려주면서 해결하는 방법을 사용했을 것 같지만, 이 경우 11개의 결과가 존재하기 때문에 어떤 데이터를 얼마나 늘릴지도 판단하기 어려웠습니다. 따라서 점차적으로 예측력이 안 좋은 부분을 개선해나가는 부스팅 트리 방식이 좋다고 생각했습니다. 
+각 fold 별로 confusion matrix를 만들어서 따로 더했고, 모두 더한 confusion matrix를 최종본으로 썼습니다.
+
+```{r first method result}
+ten_tables
+corrected <- sum(diag(ten_tables))
+corrected/sum(ten_tables)
+```
+
+위는 최종 confusion matrix와 accuracy 값입니다. 
+
+## 3-2
+
+```{r second method}
+male <- which(political[,"sex"] == 1)
+ggplot(political[male,]) + geom_bar(aes(ideo_self)) # conservative
+ggplot(political[-male,]) + geom_bar(aes(ideo_self)) # neutral
+```
+
+두번째 방법은 위와 같은 방식으로 그림을 그려서 변수별로 어떤 때 진보적인지 보수적인지를 확인하고 그에 맞게 점수를 주는 rule-based 방식으로 진행했습니다. 예측력은 훨씬 떨어지지만 각 변수에 대해 어떤 답을 했을 때, 혹은 어느 지역에 살 때 더 보수적인지 진보적인지 설명할 수  있다는 점에서 매력적인 접근법이라고 생각했습니다. 또한 바 그래프가 굉장히 한 쪽으로 치우친 경우 추가적으로 점수를 더 많이 주고, 아주 조금 치우친 경우에는 점수를 덜 주는 방식으로 진행했습니다.
+다음은 각 변수별 진보/보수 정도 평가 내용입니다.
+
+* sex : 남자면 보수, 여자면 중도
+* age1 : 50세 이하면 중도, 초과면 매우 보수
+* edu : 1이면 조금 진보, 5면 조금 보수, 그 외 중도
+* area : 2, 7, 10, 11, 14이면 보수, 5, 9, 12, 15, 16면 진보
+* income : 8, 14, 15면 보수, 2, 3, 5, 6, 7, 9면 진보
+* k2 : 1이면 보수, 0이면 진보
+* k3 : 1이면 보수, 0이면 진보
+* k4 : 1이면 매우 보수, 0이면 진보
+* k6 : 1이면 보수, 0이면 진보
+* k7 : 1이면 매우매우 보수, 0이면 중도
+* k8 : 1이면 매우매우 보수, 0이면 중도
+* k10 : 1이면 진보, 0이면 조금 보수
+* k12 : 1이면 진보, 0이면 보수
+* k13 : 1이면 매우매우매우 보수, 0이면 진보
+* k14 : 1이면 조금 보수, 0이면 조금 진보
+* 모든 결측값 : 중도
+
+```{r}
+std_poli <- political %>%
+  mutate(pred = ifelse(is.na(k2), 0, ifelse(k2==1, 1, -1)) +
+           ifelse(is.na(k3), 0, ifelse(k3==1, 1, -1)) +
+           ifelse(is.na(k4), 0, ifelse(k4==1, 1.5, -1)) +
+           ifelse(is.na(k6), 0, ifelse(k6==1, 1, -1)) +
+           ifelse(is.na(k7), 0, ifelse(k7==1, 2, 0)) +
+           ifelse(is.na(k8), 0, ifelse(k8==1, 2, 0)) +
+           ifelse(is.na(k10), 0, ifelse(k10==1, -1, 0.5)) +
+           ifelse(is.na(k12), 0, ifelse(k12==1, -1, 1)) +
+           ifelse(is.na(k13), 0, ifelse(k13==1, 2.5, -1)) +
+           ifelse(is.na(k14), 0, ifelse(k14==1, 0.5, -0.5)) +
+           ifelse(sex==1, 1, 0) +
+           ifelse(age1>50, 1.5, 0) +
+           ifelse(edu==1, -0.5, ifelse(edu==5, 0.5, 0)) +
+           ifelse(area %in% c(2, 7, 10, 11, 14), 1, ifelse(area %in% c(5, 9, 12, 15, 16), -1, 0)) +
+           ifelse(income %in% c(8, 14, 15), 1, ifelse(income %in% c(2, 3, 5, 6, 7, 9), -1, 0))
+         ) %>%
+  mutate(standard_pred = ifelse(pred < -7, 0,
+                                ifelse(pred >= -7 & pred < -5, 1,
+                                       ifelse(pred >= -5 & pred < -3, 2,
+                                                  ifelse(pred >= -3 & pred < -1.5, 3, 
+                                                         ifelse(pred >= -1.5 & pred < 0, 4,
+                                                                ifelse(pred >= 0 & pred < 4, 5,
+                                                                       ifelse(pred >= 4 & pred < 6.5, 6,
+                                                                              ifelse(pred >= 6.5 & pred < 9, 7,
+                                                                                     ifelse(pred >= 9 & pred < 12, 8, 
+                                                                                            ifelse(pred >= 12 & pred < 15, 9, 10
+                                                                                                   )))))))))))
+```
+
+위 아이디어에 기반해 점수를 더하거나 빼주었고, 그렇게 나온 점수를 0에서 10으로 할당해주었는데 이 때 구간이 많아지다 보니 양끝 부분이 적어지는 현상과 5에 해당하는 응답자가 많았다는 점을 고려하여 할당해주었습니다. 따라서 두번째 분석에서는 보수/진보/중도를 나누는 것과 구간을 나눠주는 것에서 저의 주관이 어느 정도 개입되었습니다.
+
+```{r second method result}
+table(real = std_poli$ideo_self,pred = std_poli$standard_pred)
+sum(std_poli$ideo_self == std_poli$standard_pred)/nrow(std_poli)
+```
+
+이 분류법은 train의 과정이 없기 때문에 바로 전체 데이터에 적용해보고 confusion matrix와 예측률을 구했습니다. 예측률 자체는 그렇게 높지 않으나 전체적인 매트릭스가 정확한 정답 근처에 예측을 했다는 점을 감안하면 괜찮은 방법이라고 생각됩니다. 
+
+
+# 4
+
+## 4-1
+
+```{r}
+apply(fin4[,2:51], 1, mean)
+apply(fin4[,2:51], 1, sd)
+apply(fin4[,2:51], 2, mean)
+apply(fin4[,2:51], 2, sd)
+```
+
+분석에 앞서 데이터 형태에 대한 의문이 생겨 행과 열에 따라 평균과 표준편차를 구했습니다. 전체적으로 평균은 0, 표준편차는 1에 근접했습니다. 저는 이 데이터가 rnorm(0,1)로 만들어졌다는 결론을 내렸습니다. V2부터 V51까지 랜덤으로 만들어진 변수이기 때문에 군집화 과정에 더 중요하거나 덜 중요한 변수는 없다고 판단했고, 모든 변수를 단순하면서도 강력한 K-means 방법으로 군집화하기로 했습니다. 
+
+```{r}
+k_clust <- kmeans(fin4[,2:51], 2, nstart = 20); k_clust
+k_clust$cluster
+```
+
+## 4-2
+
+```{r}
+n_fin4 <- fin4[sample(1:500),] # shuffle
+
+ten_tables2 <- matrix(0, 2, 2)
+colnames(ten_tables2) <- paste0("pred", 0:1)
+rownames(ten_tables2) <- paste0("real", 0:1)
+ten_tables2 <- as.table(ten_tables2)
+for (i in 1:5){
+  idx <- ((i-1)*100+1):(i*100)
+  test_set <- n_fin4[idx,]
+  random01 <- sample(0:1, 100, replace = TRUE)
+  itable <- table(test_set$V1, random01)
+  ten_tables2 <- ten_tables2 + as.table(itable)
+}
+ten_tables2
+corrected <- sum(diag(ten_tables2))
+corrected/sum(ten_tables2)
+```
+
+랜덤워크라는 생각을 가지고 있기 때문에 복잡한 방법을 쓰기보다 똑같이 랜덤하게 예측하는 방법을 선택했습니다. 
+
+
+# 5
+
+이 데이터를 통한 군집화는 기존에 나와있는 모델을 쓰기보다 제가 가정한 논리에 기반해 직접 군집화하는 것이 더 효과적이라 생각했습니다. 논리는 다음과 같습니다.
+
+* 발의한 법안 수가 많은[적은] 의원 순으로 진행한다.
+* 각 의원이 발의한 법안 중 n/k개 이상을 같이했다면 같은 군집에 속한다.
+* 속한 군집이 없다면 스스로 군집을 열게 한다.
+
+이 방법을 적용할 때 분석자가 변경할 수 있는 것은 발의한 법안 수에 따라 오름차순으로 정렬할지, 내림차순으로 정렬할지와 같은 군집에 속하는 것으로 묶을 때 각 의원이 발의한 전체 법안 n개 중 n/k를 몇으로 할지, 즉 k 값을 얼마로 할지입니다.
+
+이 때 오름차순으로 하면 비교적 많은 군집이 생기고, 내림차순으로 하면 비교적 적은 군집이 생깁니다. 이는 오름차순으로 할 때 초반에 연결되는 관계 수가 적어 군집이 많이 만들어지고, 내림차순으로 할 때는 초반에 연결되는 관계 수가 많아 군집이 적게 만들어지기 때문입니다. 
+또한 k값을 얼마로 하는지도 중요한데, k를 작게 할수록 많은 군집이 생기고, k를 크게 할수록 적은 군집이 생긴다. 시행착오를 통해 4~6 정도의 k값이 분석 가능한 수준의 k값임을 확인했습니다. 
+
+```{r}
+
+group_poli <- rep(0, 141)
+influence_order <- order(diag(as.matrix(poli_rel)), decreasing = TRUE)
+j <- 0
+for (i in influence_order){
+  if(group_poli[i] == 0){
+    j <- j+1
+    k <- j
+  } else{
+    k <- group_poli[i]
+  }
+  ith_poli<- poli_rel[i,]
+  refer <- poli_rel[i,i]
+  related <- which(ith_poli >= (refer/5))
+  group_poli[related] <- k
+}
+
+ggplot(data.frame(x=group_poli)) + geom_bar(aes(as.factor(x)))
+
+
+poli_party_clust <- bind_cols(poli_party, clust=group_poli)
+poli_party_clust
+```
+
+최종적으로 참고자료 차원으로 있던 party 변수를 이용해 군집화가 잘 되었는지 검토해봤는데, 이 때 재밌는 점을 몇 개 찾을 수 있었습니다. (k와 차순을 바꿔가며 만든 표를 직접 보며 파악한 내용이기 때문에 시각화하거나 테이블을 보여주기엔 분량이 많아 생략했습니다. 직접하시고자 하는 경우 decreasing 부분을 T or F 조절하고, refer/다음에 있는 수를 조절하여 확인할 수 있습니다.)
+
+* 정의당과 무소속은 각각 1명으로 항상 더불어민주당의 대세 군집과 같은 군집에 속한다.
+* 더불어민주당은 군집을 아주 많이 만들지 않는 이상 거의 모두가 같은 군집에 속한다.
+* 자유한국당은 전체의 군집이 3개 이상일 때부터는 항상 자유한국당 내부에서 군집이 갈리고, 군집이 많을수록 더 다양한 군집이 자유한국당 내부에 있음을 확인할 수 있다. [두 군집일 때 각 군집에 해당하는 자유한국당원 수[세력]가 비슷하다.]
+* 국민의당은 군집이 아주 많지 않으면 더불어민주당과 같은 군집에 속한다. 군집이 많아져도 여러 세력으로 잘 갈리지 않는 더불어민주당에 비해 국민의당은 군집이 많아지면 비슷한 규모의 두 세력으로 나뉜다.
+* 바른정당은 군집이 아주 많지 않을 때는 자유한국당의 한 세력과 항상 같은 군집에 속하고, 군집이 일정 수준 이상 많아지면 legi1만 혼자 다른 의견을 낸다는 것을 알 수 있다. 이를 통해 바른정당에는 한 명이 다른 생각을 품는다는 것과 자유한국당의 한 세력이 바른정당과 긴밀한 관계라는 것을 유추할 수 있다.
