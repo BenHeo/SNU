@@ -67,3 +67,21 @@ print(summary(regout_full))
 
 regout_short = lm(logQ ~ logPr+dummy1+dummy2)
 print(summary(regout_short))
+
+
+
+########################################################################
+
+logPr = u1 +  u2
+quality = u3
+dummy1 = (u4> 0.7)*1.0
+dummy2 = ((u4<0.7)&(u4>0.3))*1.0
+
+logQ= trueB[1] + trueB[2]*logPr + trueB[3]*dummy1 + trueB[4]*dummy2 + trueB[5]*quality + err
+
+
+regout_full = lm(logQ ~ logPr+dummy1+dummy2+quality)
+print(summary(regout_full))
+
+regout_short = lm(logQ ~ logPr+dummy1+dummy2)
+print(summary(regout_short))
