@@ -4,6 +4,7 @@ fin4 <- read.xlsx("data4.xlsx", 2, startRow = 2)
 head(fin4)
 fin4 <- fin4 %>%
   select(-NA.)
+
 apply(fin4[,2:51], 1, mean)
 apply(fin4[,2:51], 1, sd)
 apply(fin4[,2:51], 2, mean)
