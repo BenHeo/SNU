@@ -1,0 +1,95 @@
+wsdata0 = read.csv('Wholesale.csv')
+wsdata1 = wsdata0[,3:8] # scaling 할 변수
+mydata = scale(wsdata1)
+
+######################
+# K-means : kmeans
+######################
+
+# Determine number of clusters
+tss = (nrow(mydata)-1)*sum(apply(mydata,2,var))   # total SS
+bigK = 20
+for (i in 2:bigK) wss[i] = sum(kmeans(mydata, centers=i)$withinss)   # for k=2:K, compute within SS
+plot(1:bigK, wss, type="b", xlab="Number of Clusters (k)",   ylab="Within-Group Sum of Squares")
+title("Looking for elbow....")
+
+# let us fix k=5
+fit = kmeans(mydata, 5) # 5 cluster solution
+#> fit$size
+#[1]  98   1  10 279  52
+fit = kmeans(mydata, 4) # 4 cluster solution
+#> fit$size
+#[1] 328  43  68   1
+fit = kmeans(mydata, 3) # 3 cluster solution
+#> fit$size
+#[1]  49  44 347   
+
+# ok. fix k at 3
+
+aggregate(mydata,by=list(fit$cluster),FUN=mean)  # get cluster means 
+kmclust.output = data.frame(mydata, fit$cluster)  # append cluster assignment
+
+# Cluster Plot against 1st 2 principal components
+library(cluster) 
+clusplot(mydata, fit$cluster, color=TRUE, shade=TRUE, labels=2, lines=0)
+
+
+######################
+# Hierarchical cluster: hclust 
+######################
+
+d <- dist(mydata, method = "euclidean") # distance matrix
+fit <- hclust(d, method="complete") 
+plot(fit, cex = 0.3) # display dendogram
+# draw dendogram with red borders around the 5 clusters 
+rect.hclust(fit, k=3, border="red")
+groups <- cutree(fit, k=3) # cut tree into 5 clusters
+table(groups)
+#groups
+#  1   2   3 
+#429  10   1 
+# looks weird. then let us use ward method
+
+fit <- hclust(d, method="ward.D") 
+plot(fit) # display dendogram
+# draw dendogram with red borders around the 5 clusters 
+rect.hclust(fit, k=3, border="red")
+groups <- cutree(fit, k=3) # cut tree into 5 clusters
+table(groups)
+clusplot(mydata, groups, color=TRUE, shade=TRUE, labels=2, lines=0)
+
+
+######################
+# Probabilistic  cluster: mclust 
+######################
+
+library(mclust)
+fit = Mclust(mydata)
+plot(fit) # plot results 
+summary(fit) # display the best model
+
+#Mclust VVI (diagonal, varying volume and shape) model with 8 components:
+#
+# log.likelihood   n  df       BIC       ICL
+#      -1269.249 440 103 -3165.436 -3264.505
+#
+#Clustering table:
+# 1  2  3  4  5  6  7  8 
+#59 54 91 47 67 51 55 16 
+
+clusplot(mydata, fit$classification, color=TRUE, shade=TRUE, labels=2, lines=0)
+
+
+
+
+fit3 = Mclust(mydata, G=3)
+summary(fit3) # display the 3-component model
+#Mclust VVV (ellipsoidal, varying volume, shape, and orientation) model with 3 components:
+#
+# log.likelihood   n df      BIC       ICL
+#      -1526.219 440 83 -3557.64 -3593.981
+#
+#Clustering table:
+#  1   2   3 
+#189 210  41 
+clusplot(mydata, fit3$classification, color=TRUE, shade=TRUE, labels=2, lines=0)
